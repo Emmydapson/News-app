@@ -5,20 +5,25 @@ import nodemailer from 'nodemailer';
 
 // Registration
 export const register = async (req, res) => {
-  const { firstName, lastName, email, password } = req.body;
-  try {
-    let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ msg: 'User already exists' });
-
-    user = new User({ firstName, lastName, email, password });
-    await user.save();
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(201).json({ token });
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
-  }
-};
+    // Map incoming field names to schema field names
+    const { 'first name': firstName, 'last name': lastName, email, password } = req.body;
+  
+    try {
+      let user = await User.findOne({ email });
+      if (user) return res.status(400).json({ msg: 'User already exists' });
+  
+      user = new User({ firstName, lastName, email, password });
+      await user.save();
+  
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      res.status(201).json({ token });
+    } catch (err) {
+      console.error('Registration error:', err);
+      res.status(500).json({ msg: 'Server error', error: err.message });
+    }
+  };
+  
+  
 
 // Login
 export const login = async (req, res) => {
