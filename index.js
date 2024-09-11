@@ -14,6 +14,12 @@ const app = express();
 // Middleware
 app.use(express.json());
 
+// Default route for root path
+app.get('/', (req, res) => {
+    res.send('Server is up and running.');
+  });
+  
+
 // Routes
 app.use('/api/auth', authRoutes);
 
