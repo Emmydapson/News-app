@@ -6,7 +6,7 @@ import nodemailer from 'nodemailer';
 // Registration
 export const register = async (req, res) => {
     // Map incoming field names to schema field names
-    const { 'first name': firstName, 'last name': lastName, email, password } = req.body;
+    const {  firstName,  lastName, email, password } = req.body;
   
     try {
       let user = await User.findOne({ email });
