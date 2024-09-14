@@ -2,6 +2,8 @@ import express from 'express';
 import dotenv from 'dotenv';
 import connectDB from './src/config/db.js';
 import authRoutes from './src/routes/authRoutes.js';
+import newsRoutes from './src/routes/newsRoutes.js';
+import offerRoutes from './src/routes/offerRoutes.js'
 
 dotenv.config();
 
@@ -22,6 +24,8 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api', newsRoutes);
+app.use('/api', offerRoutes)
 
 // Start the server
 const PORT = process.env.PORT || 5000;

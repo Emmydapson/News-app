@@ -5,42 +5,63 @@ import nodemailer from 'nodemailer';
 
 // Registration
 export const register = async (req, res) => {
-    // Map incoming field names to schema field names
-    const {  firstName,  lastName, email, password } = req.body;
-  
-    try {
-      let user = await User.findOne({ email });
-      if (user) return res.status(400).json({ msg: 'User already exists' });
-  
-      user = new User({ firstName, lastName, email, password });
-      await user.save();
-  
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-      res.status(201).json({ token });
-    } catch (err) {
-      console.error('Registration error:', err);
-      res.status(500).json({ msg: 'Server error', error: err.message });
-    }
-  };
-  
-  
+  const { firstName, lastName, email, password } = req.body;
+
+  try {
+    let user = await User.findOne({ email });
+    if (user) return res.status(400).json({ msg: 'User already exists' });
+
+    // Check if there's already a superadmin
+    const existingSuperAdmin = await User.findOne({ role: 'superadmin' });
+    console.log('Superadmin user:', existingSuperAdmin);
+
+    // If no superadmin exists, assign this user the superadmin role
+    const role = existingSuperAdmin ? 'user' : 'superadmin';
+
+    // No need to hash password here; it's handled by the pre-save hook
+    user = new User({ firstName, lastName, email, password, role });
+    await user.save();
+
+    res.status(201).json({ msg: 'User registered successfully', user: { firstName, lastName, email, role } });
+  } catch (err) {
+    console.error('Registration error:', err);
+    res.status(500).json({ msg: 'Server error', error: err.message });
+  }
+};
 
 // Login
 export const login = async (req, res) => {
   const { email, password } = req.body;
+
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ msg: 'Invalid credentials' });
+    if (!user) {
+      console.log('No user found with email:', email);
+      return res.status(400).json({ msg: 'Invalid email or password' });
+    }
+    console.log('Login password:', password);
+    console.log('Stored hashed password:', user.password);
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
+    if (!isMatch) {
+      console.log('Password mismatch for email:', email);
+      return res.status(400).json({ msg: 'Invalid email or password' });
+    }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(200).json({ token });
+    console.log('User found:', user);
+
+    // Generate token including user role
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    console.log('Generated token:', token);
+    res.status(200).json({ token, user: { firstName: user.firstName, lastName: user.lastName, email: user.email, role: user.role } });
   } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Login error:', err);
+    res.status(500).json({ msg: 'Server error', error: err.message });
   }
 };
+
+
 
 // Forgot Password (Send OTP)
 export const forgotPassword = async (req, res) => {
@@ -71,10 +92,14 @@ export const forgotPassword = async (req, res) => {
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
-      if (error) return res.status(500).json({ msg: 'Email not sent' });
+      if (error) {
+        console.error('Email sending error:', error);
+        return res.status(500).json({ msg: 'Email not sent', error: error.message });
+      }
       res.status(200).json({ msg: 'OTP sent to your email' });
     });
   } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
+    res.status(500).json({ msg: 'Server error', error: err.message });
   }
 };
+
