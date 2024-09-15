@@ -103,3 +103,64 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
+// Verify OTP
+export const verifyOtp = async (req, res) => {
+  const { otp } = req.body;
+
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: otp,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ msg: 'Invalid or expired OTP' });
+    }
+
+    // Generate a temporary JWT token with the user's ID
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '15m' }); // 15 min expiration for reset token
+
+    res.status(200).json({ msg: 'OTP verified', resetToken: token });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error', error: err.message });
+  }
+};
+
+
+// Reset Password
+export const resetPassword = async (req, res) => {
+  const { resetToken, newPassword, confirmNewPassword } = req.body;
+
+  try {
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({ msg: 'Passwords do not match' });
+    }
+
+    // Verify the reset token and extract the user ID
+    const decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Hash the new password and save it
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    // Clear the OTP fields
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    res.status(200).json({ msg: 'Password reset successfully' });
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(400).json({ msg: 'Reset token expired' });
+    }
+    res.status(500).json({ msg: 'Server error', error: err.message });
+  }
+};
+
