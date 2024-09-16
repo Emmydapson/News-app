@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const newsSchema = new mongoose.Schema({
   title: { type: String, required: true },
   date: { type: Date, default: Date.now },
-  coverImage: { type: String, required: true },
+  coverImage: { type: String },  // Make this optional
   summary: { type: String, required: true },
   content: { type: String, required: true },
   source: { type: String, required: true },

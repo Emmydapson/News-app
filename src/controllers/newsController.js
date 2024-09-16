@@ -1,16 +1,23 @@
 import News from '../models/News.js';
+import cloudinary from '../config/cloudinary.js';
 
 // Add News
 export const addNews = async (req, res) => {
   const { title, summary, content, source, link, coverImage } = req.body;
   try {
+    // Handle file upload if a cover image is provided
+    let coverImageUrl = null;
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path);  // Upload to Cloudinary
+      coverImageUrl = result.secure_url;  // Get the uploaded image URL
+    }
     const news = new News({
       title,
       summary,
       content,
       source,
       link,
-      coverImage,
+      coverImage:coverImageUrl, // Use the secure URL from Cloudinary
       addedBy: req.user.id,  // assuming the user is an admin and authenticated
     });
     await news.save();
