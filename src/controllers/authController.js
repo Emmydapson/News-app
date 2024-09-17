@@ -68,7 +68,7 @@ export const forgotPassword = async (req, res) => {
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
     const otp = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
-    user.resetPasswordToken = otp;
+    user.resetPasswordToken = otp.toString();
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour expiration
     await user.save();
 
@@ -106,11 +106,14 @@ export const verifyOtp = async (req, res) => {
 
   try {
     const user = await User.findOne({
-      resetPasswordToken: otp,
+      resetPasswordToken: otp.toString(),
       resetPasswordExpires: { $gt: Date.now() },
     });
 
     if (!user) {
+      console.log('User input OTP:', otp);
+      console.log('Stored OTP:', user.resetPasswordToken);
+
       return res.status(400).json({ msg: 'Invalid or expired OTP' });
     }
 

@@ -3,7 +3,7 @@ import cloudinary from '../config/cloudinary.js';
 
 // Add News
 export const addNews = async (req, res) => {
-  const { title, summary, content, source, link } = req.body;
+  const { title, summary, source, link } = req.body;
   try {
     // Multer automatically stores the file in Cloudinary and adds `path` and other metadata in `req.file`
     let coverImageUrl = null;
@@ -17,7 +17,6 @@ export const addNews = async (req, res) => {
     const news = new News({
       title,
       summary,
-      content,
       source,
       link,
       coverImage: coverImageUrl,  // Save the Cloudinary image URL if available

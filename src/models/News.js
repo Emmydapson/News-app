@@ -5,7 +5,6 @@ const newsSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   coverImage: { type: String },  // Make this optional
   summary: { type: String, required: true },
-  content: { type: String, required: true },
   source: { type: String, required: true },
   link: { type: String, required: true },
   addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Admin adding the news
