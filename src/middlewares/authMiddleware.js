@@ -27,7 +27,7 @@ export const authenticateToken = (req, res, next) => {
 };
 
 // Middleware to check if the user is a superadmin
-export const isSuperAdmin = async (req, res, next) => {
+export const isAdminOrSuperAdmin = async (req, res, next) => {
   try {
     console.log('User ID from token:', req.user.id);
     console.log('User role from token:', req.user.role);
@@ -41,10 +41,11 @@ export const isSuperAdmin = async (req, res, next) => {
       });
     }
 
-    if (user.role !== 'superadmin') {
+    // Allow both 'admin' and 'superadmin' to perform the action
+    if (user.role !== 'admin' && user.role !== 'superadmin') {
       return res.status(403).json({
         msg: 'Access denied. Insufficient privileges.',
-        error: 'This action can only be performed by a superadmin'
+        error: 'This action can only be performed by an admin or superadmin'
       });
     }
 

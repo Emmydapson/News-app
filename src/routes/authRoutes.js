@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { register, login, forgotPassword, verifyOtp, resetPassword } from '../controllers/authController.js'; 
-import { authenticateToken, isSuperAdmin } from '../middlewares/authMiddleware.js';
+import { authenticateToken, isAdminOrSuperAdmin } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
@@ -11,7 +11,7 @@ router.post('/verify-otp', verifyOtp);
 router.post('/reset-password', resetPassword);
 
 /// Only a superadmin can promote a user to an admin
-router.put('/user/:id/promote', authenticateToken, isSuperAdmin, async (req, res) => {
+router.put('/user/:id/promote', authenticateToken, isAdminOrSuperAdmin, async (req, res) => {
   try {
       const user = await User.findById(req.params.id);
       if (!user) return res.status(404).json({ msg: 'User not found' });
