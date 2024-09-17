@@ -8,7 +8,8 @@ export const register = async (req, res) => {
   const { firstName, lastName, email, password } = req.body;
 
   try {
-    let user = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase(); // Normalize email to lowercase
+    let user = await User.findOne({ email: normalizedEmail });
     if (user) return res.status(400).json({ msg: 'User already exists' });
 
     // Check if there's already a superadmin
@@ -19,10 +20,10 @@ export const register = async (req, res) => {
     const role = existingSuperAdmin ? 'user' : 'superadmin';
 
     // No need to hash password here; it's handled by the pre-save hook
-    user = new User({ firstName, lastName, email, password, role });
+    user = new User({ firstName, lastName, email: normalizedEmail, password, role });
     await user.save();
 
-    res.status(201).json({ msg: 'User registered successfully', user: { firstName, lastName, email, role } });
+    res.status(201).json({ msg: 'User registered successfully', user: { firstName, lastName, email: normalizedEmail, role } });
   } catch (err) {
     console.error('Registration error:', err);
     res.status(500).json({ msg: 'Server error', error: err.message });
@@ -34,32 +35,27 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
-      console.log('No user found with email:', email);
       return res.status(400).json({ msg: 'Invalid email or password' });
     }
-    console.log('Login password:', password);
-    console.log('Stored hashed password:', user.password);
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.log('Password mismatch for email:', email);
       return res.status(400).json({ msg: 'Invalid email or password' });
     }
-
-    console.log('User found:', user);
 
     // Generate token including user role
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-    console.log('Generated token:', token);
-    res.status(200).json({ token, user: { firstName: user.firstName, lastName: user.lastName, email: user.email, role: user.role } });
+    res.status(200).json({ token, user: { firstName: user.firstName, lastName: user.lastName, email: normalizedEmail, role: user.role } });
   } catch (err) {
-    console.error('Login error:', err);
     res.status(500).json({ msg: 'Server error', error: err.message });
   }
 };
+
+
 
 
 
@@ -67,7 +63,8 @@ export const login = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase(); // Normalize email to lowercase
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
     const otp = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
@@ -127,6 +124,7 @@ export const verifyOtp = async (req, res) => {
 };
 
 
+
 // Reset Password
 export const resetPassword = async (req, res) => {
   const { resetToken, newPassword, confirmNewPassword } = req.body;
@@ -145,9 +143,8 @@ export const resetPassword = async (req, res) => {
       return res.status(404).json({ msg: 'User not found' });
     }
 
-    // Hash the new password and save it
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    // Set the new password directly, the pre-save hook will handle hashing
+    user.password = newPassword;
 
     // Clear the OTP fields
     user.resetPasswordToken = undefined;
@@ -163,4 +160,5 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ msg: 'Server error', error: err.message });
   }
 };
+
 

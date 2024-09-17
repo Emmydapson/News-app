@@ -1,7 +1,7 @@
 // config/multer.js
 import multer from 'multer';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
-import cloudinary from './cloudinaryConfig.js'; // Import Cloudinary config
+import cloudinary from './cloudinary.js'; // Import Cloudinary config
 
 // Configure Cloudinary storage for Multer with dynamic folders
 const storage = new CloudinaryStorage({
