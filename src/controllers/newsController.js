@@ -3,26 +3,34 @@ import cloudinary from '../config/cloudinary.js';
 
 // Add News
 export const addNews = async (req, res) => {
-  const { title, summary, content, source, link, coverImage } = req.body;
+  const { title, summary, content, source, link } = req.body;
   try {
-    // Handle file upload if a cover image is provided
+    // Multer automatically stores the file in Cloudinary and adds `path` and other metadata in `req.file`
     let coverImageUrl = null;
+    
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path);  // Upload to Cloudinary
-      coverImageUrl = result.secure_url;  // Get the uploaded image URL
+      // If a cover image was uploaded, use the path provided by Cloudinary
+      coverImageUrl = req.file.path;  // The Cloudinary URL of the uploaded image
     }
+
+    // Create a new News document with the data
     const news = new News({
       title,
       summary,
       content,
       source,
       link,
-      coverImage:coverImageUrl, // Use the secure URL from Cloudinary
-      addedBy: req.user.id,  // assuming the user is an admin and authenticated
+      coverImage: coverImageUrl,  // Save the Cloudinary image URL if available
+      addedBy: req.user.id,  // Assuming `req.user` holds the authenticated user's info
     });
+
+    // Save the news to the database
     await news.save();
+
+    // Send the saved news as a response
     res.status(201).json(news);
   } catch (err) {
+    console.error(err);  // Log the error for debugging
     res.status(500).json({ msg: 'Error adding news', error: err.message });
   }
 };
