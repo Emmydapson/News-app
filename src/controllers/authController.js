@@ -127,16 +127,11 @@ export const verifyOtp = async (req, res) => {
 };
 
 
-
 // Reset Password
 export const resetPassword = async (req, res) => {
-  const { resetToken, newPassword, confirmNewPassword } = req.body;
+  const { resetToken, newPassword } = req.body;
 
   try {
-    if (newPassword !== confirmNewPassword) {
-      return res.status(400).json({ msg: 'Passwords do not match' });
-    }
-
     // Verify the reset token and extract the user ID
     const decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
     const userId = decoded.id;

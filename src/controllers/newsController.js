@@ -1,35 +1,61 @@
 import News from '../models/News.js';
 import cloudinary from '../config/cloudinary.js';
+import fs from 'fs';
+
 
 // Add News
 export const addNews = async (req, res) => {
   const { title, summary, source, link } = req.body;
+
+  console.log('Incoming request data:', { title, summary, source, link });
+
   try {
-    // Multer automatically stores the file in Cloudinary and adds `path` and other metadata in `req.file`
     let coverImageUrl = null;
-    
+
     if (req.file) {
-      // If a cover image was uploaded, use the path provided by Cloudinary
-      coverImageUrl = req.file.path;  // The Cloudinary URL of the uploaded image
+      console.log('File received from multer:', req.file);
+
+      const filePath = req.file.path;
+
+      try {
+        console.log('Uploading to Cloudinary...');
+        const result = await cloudinary.uploader.upload(filePath, {
+          folder: 'news',
+          format: 'auto',
+        });
+
+        coverImageUrl = result.secure_url;
+      } catch (uploadError) {
+        console.error('Error uploading to Cloudinary:', uploadError);
+        return res.status(500).json({ msg: 'Error uploading image', error: uploadError.message });
+      }
+
+      // Asynchronous file deletion
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error('Error deleting local file:', err);
+        }
+      });
     }
 
-    // Create a new News document with the data
     const news = new News({
       title,
       summary,
       source,
       link,
-      coverImage: coverImageUrl,  // Save the Cloudinary image URL if available
-      addedBy: req.user.id,  // Assuming `req.user` holds the authenticated user's info
+      coverImage: coverImageUrl,
+      addedBy: req.user.id,
     });
 
-    // Save the news to the database
+    console.log('News object before saving:', news);
+
     await news.save();
 
-    // Send the saved news as a response
+    console.log('News successfully saved:', news);
+
     res.status(201).json(news);
   } catch (err) {
-    console.error(err);  // Log the error for debugging
+    console.error('Error adding news:', err);
     res.status(500).json({ msg: 'Error adding news', error: err.message });
   }
 };
@@ -48,7 +74,10 @@ export const getNews = async (req, res) => {
 export const deleteNews = async (req, res) => {
   const { id } = req.params;
   try {
-    await News.findByIdAndDelete(id);
+    const deletedNews = await News.findByIdAndDelete(id);
+    if (!deletedNews) {
+      return res.status(404).json({ msg: 'News not found' });
+    }
     res.status(200).json({ msg: 'News deleted' });
   } catch (err) {
     res.status(500).json({ msg: 'Error deleting news', error: err.message });
