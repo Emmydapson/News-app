@@ -39,20 +39,16 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // Set file size limit to 10MB
   fileFilter: (req, file, cb) => {
-    // Define allowed formats including AVIF
-    const allowedFormats = ['image/jpeg', 'image/png', 'image/jpg', 'image/avif'];
-
-    // Log file information for debugging
-    console.log('Received file:', file);
-
-    // Check if file type is allowed
-    if (allowedFormats.includes(file.mimetype)) {
+    // Check if the file's mimetype starts with 'image/'
+    if (file.mimetype.startsWith('image/')) {
       cb(null, true); // Accept the file
     } else {
       cb(new Error('Invalid file format'), false); // Reject the file
     }
   }
 });
+
+
 
 
 export default upload;
